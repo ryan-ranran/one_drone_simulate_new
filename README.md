@@ -460,3 +460,10 @@ ros2 topic echo --once /flight_hold_reason --qos-durability transient_local
 - [控制模块说明](docs/control_architecture.md)
 - [当前真机标定说明](deploy/calibration/uav1/README.md)
 - 上游来源及许可证：各算法目录中的 `UPSTREAM.md`、`LICENSE`。
+
+
+测试一下相机
+```bash
+ros2 launch bringup startup.launch.py   sim:=false   flight_control:=false   localization_source:=openvins   perception_enabled:=false   calibration_dir:=/home/chenran/one_drone/deploy/calibration/uav1   fcu_url:=/dev/one_drone_no_fcu:921600
+
+```

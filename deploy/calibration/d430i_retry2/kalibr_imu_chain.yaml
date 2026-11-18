@@ -1,0 +1,16 @@
+%YAML:1.0
+imu0:
+  T_i_b: [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]
+  accelerometer_noise_density: 0.000875
+  accelerometer_random_walk: 0.000469
+  gyroscope_noise_density: 0.000232
+  gyroscope_random_walk: 2.3e-05
+  rostopic: /uav1/imu0
+  time_offset: 0.0
+  update_rate: 200.0
+  model: calibrated
+  Tw: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+  R_IMUtoGYRO: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+  Ta: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+  R_IMUtoACC: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+  Tg: [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]

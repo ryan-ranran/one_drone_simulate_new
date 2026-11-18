@@ -3,22 +3,22 @@
 # 两端使用相同源码。sim 自动选下面整套 profile；迁移时只修改本文件，无需改 launch/Python/C++。
 # 真机无前视相机保留 hardware.perception_enabled=false；以后接入相机时改为 true。
 startup:
-  sim: true # false 使用下面 hardware 真机配置；true 使用 simulation 仿真配置
+  sim: false # false 使用下面 hardware 真机配置；true 使用 simulation 仿真配置
   rviz: true # 是否打开 RViz
   yaw_control: false # true 使用平移/yaw 解耦策略；false 保持起飞/手动接入 OFFBOARD 时的机头方向，自动补偿飞控航向重置
-  flight_control: true # true 启动飞控控制与起降服务；无桨定位检查设为 false
+  flight_control: false # true 启动飞控控制与起降服务；无桨定位检查设为 false
   map_file: '' # 留空读取 global_config.yaml 的 map；也可填地图 YAML 文件名或绝对路径
   depth_scale: 0.001 # 16UC1 深度单位转换到 m 的比例；32FC1 深度已是 m
 
 hardware:
-  bootstrap_takeoff: true # 下视 MicoVIO：无水平 odom 时姿态/高度反馈起飞，空中初始化后接管导航
+  bootstrap_takeoff: false # 下视 MicoVIO：无水平 odom 时姿态/高度反馈起飞，空中初始化后接管导航
   bootstrap_height_source: barometer # 离地阶段用飞控自身气压高度，不等待微空模组的 VIO/ToF；空中定位有效后接管悬停
   bootstrap_hover_thrust: 0.5 # 真机归一化悬停推力：上桨前按本机实测/PX4 参数核对，当前为待核实初值
   bootstrap_max_thrust: 0.7 # 真机姿态起飞推力上限，须高于本机悬停推力
-  localization_source: microvio # microvio 订阅 MAVROS 转发的定位；openvins 使用双目和 IMU
-  perception_enabled: false # false 关闭相机处理，EGO/打点/决策照常；true 但没有深度帧时仍可按未知区域规划
-  depth_source: hardware # hardware 使用 D435i 深度；software 使用项目软件双目
-  calibration_dir: ~/one_drone/deploy/calibration/uav1 # 已导入的真机标定目录，支持 ~
+  localization_source: openvins # microvio 订阅 MAVROS 转发的定位；openvins 使用双目和 IMU
+  perception_enabled: true # false 关闭相机处理，EGO/打点/决策照常；true 但没有深度帧时仍可按未知区域规划
+  depth_source: hardware # hardware 使用 D435i 深度；software 使用项目软件双目(通俗点说，hardware意味着相机真的有深度，software代表是算出来的)
+  calibration_dir: ~/one_drone/deploy/calibration/d430i_retry2 # 已导入的真机标定目录，支持 ~
   target_system: 1 # 实际飞控 MAV_SYS_ID，接入前核对
   mavros_ns: /mavros # MAVROS 状态、设定值与服务的 ROS 名称空间
   fcu_url: /dev/serial/by-id/usb-MicoAir_MicoAir743v2_0-if00:921600 # MAVROS 独占的飞控串口及波特率

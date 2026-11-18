@@ -1,4 +1,5 @@
 """Explicit driver-to-algorithm topic adapters preserving messages and stamps."""
+#负责处理
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
