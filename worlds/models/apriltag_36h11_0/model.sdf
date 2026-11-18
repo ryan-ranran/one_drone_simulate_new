@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="apriltag_36h11_0">
+    <static>true</static>
+    <link name="link">
+      <visual name="tag">
+        <geometry>
+          <plane>
+            <normal>0 0 3</normal>
+            <size>0.5 0.5</size>
+          </plane>
+        </geometry>
+        <material>
+          <ambient>1 1 1 1</ambient>
+          <diffuse>1 1 1 1</diffuse>
+          <pbr>
+            <metal>
+              <albedo_map>model://apriltag_36h11_0/tag36h11_0.png</albedo_map>
+              <roughness>1</roughness>
+              <metalness>0</metalness>
+            </metal>
+          </pbr>
+        </material>
+        <cast_shadows>false</cast_shadows>
+      </visual>
+    </link>
+  </model>
+</sdf>

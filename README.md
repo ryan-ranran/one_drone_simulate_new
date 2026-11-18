@@ -171,6 +171,7 @@ bash scripts/start_algorithm_sim.sh
 等待 `[sim] Ready.`。默认场景使用原始 3 m 墙体场地，不添加识别柱；无图形环境可使用 `HEADLESS=1 bash scripts/start_algorithm_sim.sh`。
 
 默认出生位置为 `(1.3, 9.4, 0.5)`，yaw 为 `-π/2`，机头与前视相机朝场内纵向（Gazebo 世界 −Y）。可通过 `SPAWN_POSE=x,y,z,roll,pitch,yaw` 环境变量覆盖，角度单位为 rad；修改后需重启仿真。该朝向属于仿真世界，不代表 OpenVINS 的初始 `odom` 航向。
+仿真机还带一枚朝下的 640×480 RGB 相机，图像和内参分别发布到 `/uav1/d435i/down/image_raw`、`/uav1/d435i/down/camera_info`。默认起飞点垫上有一枚向上的 AprilTag 36h11 ID 0，黑色标签边长 0.4 m；此配置只提供相机图像，不包含 AprilTag 检测节点。
 
 **终端 B：启动算法与 RViz。**
 
@@ -462,8 +463,12 @@ ros2 topic echo --once /flight_hold_reason --qos-durability transient_local
 - 上游来源及许可证：各算法目录中的 `UPSTREAM.md`、`LICENSE`。
 
 
-测试一下相机
+测试一下前视相机
 ```bash
 ros2 launch bringup startup.launch.py   sim:=false   flight_control:=false   localization_source:=openvins   perception_enabled:=false   calibration_dir:=/home/chenran/one_drone/deploy/calibration/uav1   fcu_url:=/dev/one_drone_no_fcu:921600
 
 ```
+下视相机镜头
+在 启动文件 加了 ROS-Gazebo 桥接，图像和内参话题是：
+/uav1/d435i/down/image_raw
+/uav1/d435i/down/camera_info

@@ -3,7 +3,7 @@
 # 填入航点后，OFFBOARD 且 /flight_navigation_ready 为 true 时自动开始。
 decisions:
   decision_1:
-    mode: loop # loop 循环巡航；once 全部航点完成后结束并保持末点
+    mode: once # loop 循环巡航；once 全部航点完成后结束并保持末点
     frame_id: map # map 或 odom；同一个行为的所有航点共用此坐标系
     waypoints: # 留空列表 [] 时不自动巡航，起飞后等待手动打点
       - [-5.37, 4.73, 2.0]

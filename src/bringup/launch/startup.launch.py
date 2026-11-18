@@ -147,6 +147,8 @@ def setup(context):
                      for i in range(2)]
     bridge_topics += ['/uav1/d435i/imu@sensor_msgs/msg/Imu[gz.msgs.IMU',
                       '/uav1/d435i/color/image_raw@sensor_msgs/msg/Image[gz.msgs.Image',
+                      '/uav1/d435i/down/image_raw@sensor_msgs/msg/Image[gz.msgs.Image',
+                      '/uav1/d435i/down/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo',
                       '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock']
     gazebo_sensors = Node(
         package='ros_gz_bridge', executable='parameter_bridge',
