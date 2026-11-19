@@ -59,7 +59,7 @@ def configure_arguments(context, values):
     profile = values['simulation' if sim else 'hardware']
     defaults = {**values['startup'], **profile}
     names = ('localization_source', 'perception_enabled', 'flight_control', 'yaw_control', 'bootstrap_takeoff', 'bootstrap_height_source', 'bootstrap_hover_thrust', 'bootstrap_max_thrust', 'depth_source', 'calibration_dir', 'target_system', 'mavros_ns', 'fcu_url', 'gcs_url',
-             'map_file', 'cam0_topic', 'cam1_topic', 'imu_topic', 'depth_topic',
+             'visual_landing_enabled', 'bootstrap_takeoff', 'bootstrap_height_source', 'bootstrap_hover_thrust', 'bootstrap_max_thrust', 'depth_source', 'calibration_dir', 'target_system', 'mavros_ns', 'fcu_url', 'gcs_url',             'map_file', 'cam0_topic', 'cam1_topic', 'imu_topic', 'depth_topic',
              'depth_info_topic', 'depth_scale')
     return [
         *[DeclareLaunchArgument(name, default_value=launch_value(defaults[name]))
@@ -339,6 +339,13 @@ def setup(context):
                 parameters=[common, {'autostart': True,
                                      'node_names': ['map_server']}]),
         ])
+    visual_enabled = sim and arg('visual_landing_enabled').lower() == 'true'
+    apriltag_align = Node(
+        package='apriltag_align', executable='apriltag_align',
+        name='apriltag_align', output='screen',
+        condition=IfCondition('true' if visual_enabled else 'false'),
+        parameters=[common, str(Path(get_package_share_directory('apriltag_align')) /
+                                 'config/params.yaml')])
     flight_bridge = Node(
         package='flight_bridge', executable='flight_bridge',
         name='flight_bridge', output='screen',
@@ -350,7 +357,8 @@ def setup(context):
                      'bootstrap_height_source': arg('bootstrap_height_source'),
                      'bootstrap_hover_thrust': float(arg('bootstrap_hover_thrust')),
                      'bootstrap_max_thrust': float(arg('bootstrap_max_thrust')),
-                     'yaw_control': arg('yaw_control').lower() == 'true'}])
+                     'yaw_control': arg('yaw_control').lower() == 'true',
+                     'visual_landing_enabled': visual_enabled}])
     rviz_tf_filter = Node(
         package='rviz_tf_shift', executable='tf_display_filter.py',
         name='rviz_tf_filter', output='screen',
@@ -389,7 +397,8 @@ def setup(context):
         ego_traj_server,             # B-spline -> PositionCommand
         goal_manager,                # RViz goal -> EGO target
         decision_manager,            # navigation ready -> selected decision -> ordered waypoints
-        flight_bridge,               # EGO PositionCommand -> PX4 Offboard
+        apriltag_align,              # downward tag -> base_link landing correction
+        flight_bridge,               # EGO PositionCommand -> visual alignment -> PX4
         rviz_tf_filter,              # navigation TF only for RViz
         one_drone_rviz,
     ] if action is not None]

@@ -171,7 +171,7 @@ bash scripts/start_algorithm_sim.sh
 等待 `[sim] Ready.`。默认场景使用原始 3 m 墙体场地，不添加识别柱；无图形环境可使用 `HEADLESS=1 bash scripts/start_algorithm_sim.sh`。
 
 默认出生位置为 `(1.3, 9.4, 0.5)`，yaw 为 `-π/2`，机头与前视相机朝场内纵向（Gazebo 世界 −Y）。可通过 `SPAWN_POSE=x,y,z,roll,pitch,yaw` 环境变量覆盖，角度单位为 rad；修改后需重启仿真。该朝向属于仿真世界，不代表 OpenVINS 的初始 `odom` 航向。
-仿真机还带一枚朝下的 640×480 RGB 相机，图像和内参分别发布到 `/uav1/d435i/down/image_raw`、`/uav1/d435i/down/camera_info`。默认起飞点垫上有一枚向上的 AprilTag 36h11 ID 0，黑色标签边长 0.4 m；此配置只提供相机图像，不包含 AprilTag 检测节点。
+仿真机带一枚朝下的 640×480 RGB 相机，图像和内参分别发布到 `/uav1/d435i/down/image_raw`、`/uav1/d435i/down/camera_info`。起飞点有一枚向上的 AprilTag 36h11 ID 0。将 `startup.visual_landing_enabled` 设为 `true` 后，`/land` 会先依据标签在 `base_link` 中的偏差进行低速悬停对准；连续稳定后才请求 PX4 `AUTO.LAND`。视觉超时、丢帧或偏差过大时保持悬停，不修改 `/odom` 或 `map→odom`。
 
 **终端 B：启动算法与 RViz。**
 
