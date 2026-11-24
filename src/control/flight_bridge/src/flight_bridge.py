@@ -70,6 +70,7 @@ class FlightBridge(Node):
                         trajectory_max_tracking_error=5.)
         for key, value in defaults.items():
             self.declare_parameter(key, value)
+#为了少打字，这里对获得参数这个函数的名字做了优化
         self.p = lambda key: self.get_parameter(key).value
         if self.p('bootstrap_height_source') not in ('local', 'range', 'barometer'):
             raise ValueError('bootstrap_height_source must be local, range or barometer')
@@ -80,6 +81,8 @@ class FlightBridge(Node):
         stable = float(self.p('bootstrap_localization_stable_time'))
         if not math.isfinite(stable) or stable < 0:
             raise ValueError('bootstrap_localization_stable_time must be nonnegative and finite')
+
+#和视觉对齐有关的参数必须是一个有限的正数
         for key in ('visual_alignment_timeout', 'visual_alignment_target_timeout',
                     'visual_alignment_position_tolerance', 'visual_alignment_speed_tolerance',
                     'visual_alignment_max_correction', 'visual_alignment_gain',
@@ -89,6 +92,7 @@ class FlightBridge(Node):
         visual_stable = float(self.p('visual_alignment_stable_time'))
         if not math.isfinite(visual_stable) or visual_stable < 0:
             raise ValueError('visual_alignment_stable_time must be nonnegative and finite')
+
         if not 0 < float(self.p('yaw_reset_threshold_deg')) <= 180:
             raise ValueError('yaw_reset_threshold_deg must be within (0, 180]')
         # Validate before advertising /takeoff, not after an armed request.
@@ -143,10 +147,12 @@ class FlightBridge(Node):
         self.ego_odom_at = -math.inf
         self.takeoff_target = self.hold_target = None
         self.takeoff_reached_since = None
+#这四个参数分别是：具体的降落点，开始感受到标签的时间点，对齐开始时间，对齐后稳定的时间
         self.visual_alignment_target = None
         self.visual_alignment_at = -math.inf
         self.visual_alignment_started = None
         self.visual_aligned_since = None
+
         self.prestream_count = 0
         self.planner_instance = None
         self.create_subscription(Header, '/ego/map_heartbeat', self.on_map_heartbeat, 1)
@@ -192,8 +198,11 @@ class FlightBridge(Node):
         self.create_subscription(Odometry, '/ego/odom', self.on_ego_odom, 1)
         self.create_subscription(PoseStamped, str(self.p('visual_alignment_topic')),
                                  self.on_visual_alignment, 1)
+
+#正是这两行让我们可以显式调用起飞与降落
         self.create_service(Trigger, 'takeoff', self.takeoff)
         self.create_service(Trigger, 'land', self.land)
+
         self.create_timer(.05, self.tick)
         self.create_timer(1., self.publish_safety_status)
 
@@ -426,24 +435,28 @@ class FlightBridge(Node):
         self.ego_odom_at = self.now()
 
     def on_visual_alignment(self, msg):
+#第一步：我们收到的这个消息是在base_link下吗？
         if msg.header.frame_id != 'base_link':
             self.get_logger().warn(
                 f'Visual landing target frame {msg.header.frame_id!r} is not base_link',
                 throttle_duration_sec=2.)
             return
+#第二步：检查消息的时间戳：太陈旧了？时间戳倒转了？
         stamp = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
         p = msg.pose.position
         if (not -0.05 <= self.now() - stamp <= float(self.p('visual_alignment_target_timeout')) or
                 not all(math.isfinite(value) for value in (p.x, p.y, p.z))):
             return
+#第三步：算作看到了标签开始计时，把收到的消息放进对齐中
         self.visual_alignment_target = msg
         self.visual_alignment_at = self.now()
 
+#负责从odom了解当前的速度
     def visual_alignment_speed(self):
         if self.ego_odom is None or not 0 <= self.now() - self.ego_odom_at <= float(self.p('pose_timeout')):
             return math.inf
         velocity = self.ego_odom.twist.twist.linear
-        return math.hypot(velocity.x, velocity.y)
+        return math.hypot(velocity.x, velocity.y) #用勾股定理算水平速度
 
     def takeoff(self, _request, response):
         missing = []
@@ -495,8 +508,11 @@ class FlightBridge(Node):
             self.abort_takeoff('TAKEOFF_CANCELLED_BEFORE_ARMING')
             response.success, response.message = True, 'Pending takeoff cancelled'
             return response
+
+
         response.success = self.state in ('TAKEOFF', 'CRUISE', 'HOLD', 'BOOTSTRAP_TAKEOFF',
                                          'BOOTSTRAP_PRESTREAM', 'PRESTREAM', 'ARMING')
+#先定位准确再下
         if response.success and self.p('visual_landing_enabled'):
             response.message = 'Visual landing alignment started'
             self.state = 'ALIGNING'
@@ -508,6 +524,7 @@ class FlightBridge(Node):
             self.navigation_ready = False
             self.takeoff_pending = False
             self.bootstrap = None
+#传统的听到命令就立刻让飞控降落
         elif response.success:
             response.message = 'Land commanded'
             self.px4_adapter.set_mode('AUTO.LAND')
@@ -671,31 +688,42 @@ class FlightBridge(Node):
             self.standby_setpoint()
             return
 
+#这是视觉对齐中最核心的部分，当收到降落命令并处于视觉对齐模式后开始对齐
         if self.state == 'ALIGNING':
+
             if not active or not self.status.armed:
                 self.state = 'IDLE'
                 self.visual_alignment_started = self.visual_aligned_since = None
                 self.standby_setpoint()
                 return
-            target_age = self.now() - self.visual_alignment_at
-            elapsed = self.now() - self.visual_alignment_started
+
+            target_age = self.now() - self.visual_alignment_at #我们已经看到视觉标志多久了？
+            elapsed = self.now() - self.visual_alignment_started #我们已经对齐对多久了？
+
+#1.对太久还没对齐：放弃；定位不可用：放弃
             if elapsed >= float(self.p('visual_alignment_timeout')) or not self.pose_valid():
                 self.hold_position('VISUAL_ALIGNMENT_TIMEOUT' if self.pose_valid()
                                    else 'VISUAL_ALIGNMENT_POSITION_UNAVAILABLE')
                 self.visual_alignment_started = self.visual_aligned_since = None
                 return
+
+#2.看不到标签了、上次看到标签是好久之前了：放弃
             if (self.visual_alignment_target is None or
                     target_age > float(self.p('visual_alignment_target_timeout'))):
                 self.hold_position('WAITING_FOR_VISUAL_ALIGNMENT')
                 return
+
+#3.太远了：放弃（目前已经取消了这道检查）
             p = self.visual_alignment_target.pose.position
             horizontal_error = math.hypot(p.x, p.y)
-            if horizontal_error > float(self.p('visual_alignment_max_correction')):
-                self.hold_position('VISUAL_ALIGNMENT_TARGET_OUT_OF_RANGE')
-                self.visual_alignment_started = self.visual_aligned_since = None
-                return
+           # if horizontal_error > float(self.p('visual_alignment_max_correction')):
+           #     self.hold_position('VISUAL_ALIGNMENT_TARGET_OUT_OF_RANGE')
+           #     self.visual_alignment_started = self.visual_aligned_since = None
+           #     return
+
             speed = self.visual_alignment_speed()
             gain = float(self.p('visual_alignment_gain'))
+#由距离推出应该的速度
             desired_x, desired_y = alignment_velocity(
                 p.x, p.y, gain, min(float(self.p('max_horizontal_speed')),
                                     float(self.p('visual_alignment_max_speed'))))
@@ -705,6 +733,7 @@ class FlightBridge(Node):
                                            **({'yaw_ned': self.initial_heading}
                                               if not self.p('yaw_control') and self.initial_heading is not None
                                               else {}))
+
             aligned = alignment_ready(
                 p.x, p.y, speed, float(self.p('visual_alignment_position_tolerance')),
                 float(self.p('visual_alignment_speed_tolerance')))
@@ -712,7 +741,7 @@ class FlightBridge(Node):
                 self.visual_aligned_since = None
                 self.trajectory_status = 'VISUAL_ALIGNMENT_CORRECTING'
             elif self.visual_aligned_since is None:
-                self.visual_aligned_since = self.now()
+                self.visual_aligned_since = self.now()#重置为此刻开始计时
                 self.trajectory_status = 'VISUAL_ALIGNMENT_STABLE'
             elif self.now() - self.visual_aligned_since >= float(self.p('visual_alignment_stable_time')):
                 self.px4_adapter.set_mode('AUTO.LAND')
@@ -720,6 +749,8 @@ class FlightBridge(Node):
                 self.landing_mode_seen = False
                 self.visual_alignment_started = self.visual_aligned_since = None
                 self.trajectory_status = 'VISUAL_ALIGNMENT_COMPLETE'
+
+#一下是原本的内容
         elif self.state == 'LANDING':
             if self.status is not None and self.status.mode == 'AUTO.LAND':
                 self.landing_mode_seen = True

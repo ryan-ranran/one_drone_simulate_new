@@ -259,27 +259,37 @@ class VioBridge(Node):
     def callback(self,msg):
         stamp = msg.header.stamp.sec+msg.header.stamp.nanosec*1e-9
         now = self.now()
+#检查1：检查是不是有别人冻结了（5号负责冻结）
         if self.latched: return
+#检查2：检查里程计是否太陈旧
         if not -self.p('future_tolerance') <= now-stamp <= self.p('max_age'):
             self.reject('ODOMETRY_STALE'); return
+#检查3：图像时间是否太陈旧
         if not all(-self.p('future_tolerance')<=now-t<=self.p('max_age') for t in self.image_at):
             self.reject('IMAGES_STALE'); return
+#4：坐标系不匹配
         if msg.header.frame_id != self.p('expected_world') or msg.child_frame_id != self.p('expected_imu'):
             self.reject('FRAME_MISMATCH'); return
+#5：时间戳倒退
         if self.last_stamp is not None and stamp <= self.last_stamp:
             if stamp < self.last_stamp: self.latched, self.reason = True, 'STAMP_REGRESSION'
             return
+#6：位姿转换失败
         p,q,v,w = msg.pose.pose.position,msg.pose.pose.orientation,msg.twist.twist.linear,msg.twist.twist.angular
+    
         try:
             result = convert([p.x,p.y,p.z],[q.w,q.x,q.y,q.z],np.array([v.x,v.y,v.z]),np.array([w.x,w.y,w.z]),
                              msg.pose.covariance,msg.twist.covariance,self.extrinsic)
         except ValueError:
             self.reject('INVALID_COVARIANCE_OR_POSE'); return
+#7:非有限数检测，比如转换了以后有的是无穷大
         if not all(np.isfinite(x).all() for x in result):
             self.reject('NONFINITE_DATA'); return
+#8：速度太大
         pos,quat,vel,omega,pv,ov,vv = result
         if np.linalg.norm(vel)>self.p('max_speed'):
             self.reject('EXCESSIVE_SPEED'); return
+#9：协方差太大
         if max(pv)>self.p('max_position_variance') or max(ov)>self.p('max_orientation_variance') or max(vv)>self.p('max_velocity_variance'):
             self.reject('EXCESSIVE_VARIANCE'); return
         if (self.quality_velocity_stamp is None or

@@ -17,6 +17,7 @@ from apriltag_align.geometry import camera_point_to_base, solve_tag_pose
 class AprilTagAlignNode(Node):
     def __init__(self):
         super().__init__('apriltag_align')
+        #声明变量
         defaults = dict(
             image_topic='/uav1/d435i/down/image_raw',
             camera_info_topic='/uav1/d435i/down/camera_info',
@@ -30,6 +31,7 @@ class AprilTagAlignNode(Node):
             camera_rotation_optical_to_base=[0., -1., 0., -1., 0., 0., 0., 0., -1.])
         for name, value in defaults.items():
             self.declare_parameter(name, value)
+        #获取变量
         p = lambda name: self.get_parameter(name).value
         self.tag_id = int(p('tag_id'))
         self.tag_size = float(p('tag_size'))
@@ -42,16 +44,21 @@ class AprilTagAlignNode(Node):
         self.max_height = float(p('max_tag_height'))
         self.translation = np.asarray(p('camera_translation'), dtype=float).reshape(3)
         self.rotation = np.asarray(p('camera_rotation_optical_to_base'), dtype=float).reshape(3, 3)
+        #对于一些明显写错的变量抛出异常
         if self.tag_id < 0 or self.tag_size <= 0 or self.min_detections <= 0:
             raise ValueError('tag_id, tag_size and min_detections are invalid')
         if (self.max_error <= 0 or self.max_info_age <= 0 or self.min_tag_area <= 0 or
                 self.max_jump <= 0 or not 0 < self.min_height < self.max_height):
             raise ValueError('tag quality and range limits are invalid')
-        orthogonality = self.rotation.T @ self.rotation
+
+#这一段数学知识多，还有语法糖，我还没搞明白
+        orthogonality = self.rotation.T @ self.rotation #指正交性
         if not np.allclose(orthogonality, np.eye(3), atol=1e-6):
             raise ValueError('camera_rotation_optical_to_base must be orthonormal')
         if not math.isclose(float(np.linalg.det(self.rotation)), 1., abs_tol=1e-6):
             raise ValueError('camera_rotation_optical_to_base must be a proper rotation')
+
+
         self.bridge = CvBridge()
         self.camera_matrix = self.distortion = None
         self.camera_size = None
@@ -60,8 +67,10 @@ class AprilTagAlignNode(Node):
         self.samples = deque(maxlen=self.min_detections)
         self.dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36h11)
         self.detector_parameters = cv2.aruco.DetectorParameters_create()
+#最后整理好了target,调用这个函数叫它发出去
         self.target_pub = self.create_publisher(PoseStamped, str(p('output_topic')), 1)
         self.status_pub = self.create_publisher(String, str(p('status_topic')), 10)
+#这里是总入口，接收到了话题就要开始干活了
         self.create_subscription(CameraInfo, str(p('camera_info_topic')),
                                  self.on_camera_info, qos_profile_sensor_data)
         self.create_subscription(Image, str(p('image_topic')),
@@ -72,7 +81,7 @@ class AprilTagAlignNode(Node):
 
     def report(self, value):
         self.status_pub.publish(String(data=value))
-
+#接受相机数据
     def on_camera_info(self, msg):
         matrix = np.asarray(msg.k, dtype=float).reshape(3, 3)
         distortion = np.asarray(msg.d, dtype=float).reshape(-1)
@@ -85,6 +94,8 @@ class AprilTagAlignNode(Node):
         self.camera_info_at = self.now()
 
     def on_image(self, msg):
+
+#主要负责防范相机没数据，相机的大小不对，opencv无法解读数据
         if self.camera_matrix is None or self.now() - self.camera_info_at > self.max_info_age:
             self.consecutive = 0
             self.samples.clear()
@@ -103,8 +114,11 @@ class AprilTagAlignNode(Node):
             self.get_logger().warn('Image conversion failed: ' + str(exc), throttle_duration_sec=2.)
             self.report('BAD_IMAGE')
             return
+
+#要传三个参数，图像本身，视觉识别标签的标准，实际的参数
         corners, ids, _ = cv2.aruco.detectMarkers(image, self.dictionary,
                                                    parameters=self.detector_parameters)
+
         if ids is None:
             self.consecutive = 0
             self.samples.clear()
@@ -153,7 +167,8 @@ class AprilTagAlignNode(Node):
         if self.consecutive < self.min_detections:
             self.report('ACCUMULATING')
             return
-        filtered = np.median(np.asarray(self.samples), axis=0)
+#这个是真正发布了    
+        filtered = np.median(np.asarray(self.samples), axis=0)#做了一个最简单的滤波动，取这5个的中间值
         target = PoseStamped()
         target.header = msg.header
         target.header.frame_id = 'base_link'

@@ -15,3 +15,4 @@ apriltag_align:
     max_tag_height: 5.0
     camera_translation: [0.0, 0.0, -0.07]
     camera_rotation_optical_to_base: [0.0, -1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
+#这个参数文件没有被启动项目覆盖
