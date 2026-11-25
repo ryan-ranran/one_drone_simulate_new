@@ -48,7 +48,7 @@ class AprilTagAlignNode(Node):
         if self.tag_id < 0 or self.tag_size <= 0 or self.min_detections <= 0:
             raise ValueError('tag_id, tag_size and min_detections are invalid')
         if (self.max_error <= 0 or self.max_info_age <= 0 or self.min_tag_area <= 0 or
-                self.max_jump <= 0 or not 0 < self.min_height < self.max_height):
+                self.max_jump <= 0 or not self.min_height < self.max_height):
             raise ValueError('tag quality and range limits are invalid')
 
 #这一段数学知识多，还有语法糖，我还没搞明白
@@ -131,6 +131,7 @@ class AprilTagAlignNode(Node):
             self.samples.clear()
             self.report('TAG_NOT_UNIQUE' if len(matches) > 1 else 'WRONG_TAG_ID')
             return
+#标签太小            
         refined = cv2.cornerSubPix(
             image, matches[0].reshape(4, 2).astype(np.float32), (3, 3), (-1, -1),
             (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_MAX_ITER, 20, .01))
@@ -150,6 +151,7 @@ class AprilTagAlignNode(Node):
             self.report('POSE_INVALID')
             self.get_logger().warn('Tag pose rejected: ' + str(exc), throttle_duration_sec=2.)
             return
+#标签太高太低
         height = -float(point_base[2])
         if (not math.isfinite(error) or error > self.max_error or
                 not self.min_height <= height <= self.max_height):
@@ -157,11 +159,13 @@ class AprilTagAlignNode(Node):
             self.samples.clear()
             self.report('POSE_REJECTED')
             return
+#标签变化太快
         if self.samples and np.linalg.norm(point_base[:2] - self.samples[-1][:2]) > self.max_jump:
             self.consecutive = 0
             self.samples.clear()
             self.report('POSE_JUMP')
             return
+#追踪时间足够长
         self.samples.append(point_base)
         self.consecutive += 1
         if self.consecutive < self.min_detections:
