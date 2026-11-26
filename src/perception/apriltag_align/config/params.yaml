@@ -1,18 +1,19 @@
 apriltag_align:
   ros__parameters:
-    image_topic: /uav1/d435i/down/image_raw
-    camera_info_topic: /uav1/d435i/down/camera_info
-    output_topic: /uav1/apriltag/landing_target
+    image_topic: /uav1/d435i/down/image_raw             #***
+    camera_info_topic: /uav1/d435i/down/camera_info     #***
+    output_topic: /uav1/apriltag/landing_target         
     status_topic: /uav1/apriltag/alignment_status
     tag_id: 0
-    tag_size: 0.4
-    min_detections: 5
-    max_reprojection_error: 1.5
+    tag_size: 0.1  #这里的单位是m                         #***
+    min_detections: 5 #也就是要看5次都看到才能用
+    max_reprojection_error: 1.5 
     max_camera_info_age: 2.0
-    min_tag_area_px: 250.0
+    min_tag_area_px: 80.0
     max_tag_jump: 0.35
     min_tag_height: 0.0
     max_tag_height: 5.0
-    camera_translation: [0.0, 0.0, -0.07]
+    camera_translation: [0.0, 0.0, -0.07]              #***
     camera_rotation_optical_to_base: [0.0, -1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0]
 #这个参数文件没有被启动项目覆盖
+#标注了三个*的应当在迁移至真机时修改

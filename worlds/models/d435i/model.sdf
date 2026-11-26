@@ -128,7 +128,7 @@
         <visualize>false</visualize>
       </sensor>
 
-      <!-- Downward-facing RGB camera for viewing ground markers. -->
+      <!-- Downward-facing RGB camera for viewing ground markers. （这是后面加的）-->
       <sensor name='down' type='camera'>
         <pose>-0.17 0 -0.01 0 1.57079632679 0</pose>
         <topic>/d435i/down/image_raw</topic>

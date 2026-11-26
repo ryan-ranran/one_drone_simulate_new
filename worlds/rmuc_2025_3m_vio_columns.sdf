@@ -187,7 +187,7 @@
       </link>
     </model>
 
-    <!-- AprilTag 36h11 ID 0, 0.4 m 标记 -->
+    <!-- 这是我加的AprilTag 36h11 ID 0, 0.4 m 标记 -->
     <include>
       <uri>model://apriltag_36h11_0</uri>
       <name>takeoff_apriltag_0</name>
