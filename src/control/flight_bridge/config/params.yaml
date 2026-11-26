@@ -41,7 +41,7 @@ flight_bridge:
     visual_alignment_timeout: 420.0 # （要当心一定要写成.0形式，浮点数）视觉对准总超时；超时后保持悬停并等待人工处理（s）（现在这个设置使得它不会因为对准时间长而放弃）
     visual_alignment_target_timeout: 0.5 # 标签目标消息最大年龄（s）
     visual_alignment_stable_time: 1.0 # 对准满足位置和速度门限后持续稳定时间（s）
-    visual_alignment_position_tolerance: 0.02 # 允许进入 PX4 降落的水平标签偏差（m）
+    visual_alignment_position_tolerance: 0.005 # 允许进入 PX4 降落的水平标签偏差（m）
     visual_alignment_speed_tolerance: 0.05 # 允许进入 PX4 降落的水平速度（m/s）
     visual_alignment_max_correction: 3.0 # 单次视觉对准允许的最大水平误差；超出立即保持并拒绝降落（m）
     visual_alignment_gain: 0.6 # base_link 标签偏差转换为水平对准速度的增益（1/s）

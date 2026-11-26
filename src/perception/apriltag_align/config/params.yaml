@@ -9,7 +9,7 @@ apriltag_align:
     min_detections: 5 #也就是要看5次都看到才能用
     max_reprojection_error: 1.5 
     max_camera_info_age: 2.0
-    min_tag_area_px: 80.0
+    min_tag_area_px: 10.0 
     max_tag_jump: 0.35
     min_tag_height: 0.0
     max_tag_height: 5.0
